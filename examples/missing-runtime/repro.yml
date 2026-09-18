@@ -1,0 +1,16 @@
+version: 1
+name: missing-runtime-example
+workdir: examples/missing-runtime
+command:
+  default:
+    run: "crossrepro-command-that-definitely-does-not-exist"
+bug_signature:
+  exit_code:
+    mode: nonzero
+requirements:
+  commands:
+    - crossrepro-command-that-definitely-does-not-exist
+platforms:
+  - windows-latest
+  - ubuntu-latest
+  - macos-latest

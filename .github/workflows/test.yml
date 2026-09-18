@@ -1,0 +1,44 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m compileall -q src tests scripts
+      - run: python -m pytest --junitxml=.validation/tests.xml
+      - name: Validate examples and bundle
+        run: python scripts/validate_examples.py --output .validation/examples
+      - name: Build wheel
+        run: python -m pip wheel --no-deps . --wheel-dir dist
+      - name: Validate clean installation
+        run: python scripts/validate_wheel.py --wheel-dir dist --report .validation/wheel.json
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-${{ matrix.os }}-py${{ matrix.python }}
+          path: |
+            .validation/**/*.json
+            .validation/**/*.xml
+            .validation/**/*.zip
+            .validation/**/*.yml
+            dist/*.whl
+          include-hidden-files: true
+          if-no-files-found: error

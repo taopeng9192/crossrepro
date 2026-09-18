@@ -1,0 +1,16 @@
+version: 1
+name: secret-redaction-example
+workdir: examples/secret-redaction
+command:
+  default:
+    run: "python emit.py"
+bug_signature:
+  exit_code:
+    equals: 3
+requirements:
+  commands:
+    - python
+platforms:
+  - windows-latest
+  - ubuntu-latest
+  - macos-latest

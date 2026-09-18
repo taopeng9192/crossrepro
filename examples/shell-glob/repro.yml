@@ -1,0 +1,23 @@
+version: 1
+name: shell-glob-example
+workdir: examples/shell-glob
+command:
+  default:
+    shell: bash
+    run: "python check_args.py *.md"
+  windows:
+    shell: pwsh
+    run: "python check_args.py *.md"
+bug_signature:
+  exit_code:
+    equals: 2
+  stderr:
+    contains:
+      - "literal glob received"
+requirements:
+  commands:
+    - python
+platforms:
+  - windows-latest
+  - ubuntu-latest
+  - macos-latest
