@@ -2,6 +2,22 @@
 
 ## Updated status — 2026-09-18
 
+The current release is `v0.1.1`, published at
+`https://github.com/taopeng9192/crossrepro/releases/tag/v0.1.1`. Its
+release commit passed GitHub Actions run
+`https://github.com/taopeng9192/crossrepro/actions/runs/35347745740`: all six
+Windows/Ubuntu/macOS × Python 3.10/3.12 jobs succeeded. Downloaded JUnit
+artifacts show 684 executions with zero failures/errors and six explicit
+skips. The public wheel was fetched from that Release into a fresh venv,
+imported as `0.1.1`, and its `crossrepro --help` entry point succeeded; SHA-256
+is `c28599635aca851fbf7aeaf967b3c3a9618c0e20e97e296b4868c43497efac21`.
+
+Stage 10 has one documented isolated local case:
+`docs/cases/case-001-agent-browser-1407.md`. It found a collection-timeout
+cleanup defect in CrossRepro and resulted in v0.1.1, but it is not an upstream
+confirmation, upstream feedback, or external adoption. The related project
+issue `#1` is closed after release validation.
+
 Local review, fixes, full Windows tests (111 passed, 1 symlink test skipped),
 three real examples, bundle checks and clean wheel installation are done. The
 public repository and its first six-job GitHub Actions matrix are also complete:
@@ -18,7 +34,8 @@ Windows/Ubuntu/macOS × Python 3.10/3.12 jobs completed successfully. The
 published wheel was fetched from the release URL into a new isolated venv,
 imported as `0.1.0`, and its `crossrepro --help` entry point succeeded.
 
-Current status: `PUBLIC_REPOSITORY / V0.1.0_RELEASED / HOSTED_MATRIX_VALIDATED`.
+Historical v0.1.0 status: `PUBLIC_REPOSITORY / V0.1.0_RELEASED / HOSTED_MATRIX_VALIDATED`.
+Current status: `PUBLIC_REPOSITORY / V0.1.1_RELEASED / HOSTED_MATRIX_VALIDATED`.
 
 ## Original delivery next steps (historical context)
 

@@ -1,5 +1,33 @@
 # CrossRepro validation report
 
+## Maintenance release validation — 2026-09-18 / 0.1.1
+
+Status: **PUBLIC_REPOSITORY / V0.1.1_RELEASED / HOSTED_MATRIX_VALIDATED**.
+
+Version 0.1.1 fixes bounded Windows timeout cleanup when detached children keep
+capture-pipe handles open. The release commit
+`5e76312b5b2be395ef523d3e72b2d9bba02a6393` passed GitHub Actions run
+`35347745740` before annotated tag `v0.1.1` and the public Release were
+created. Downloaded artifacts contain six JUnit reports: 684 test executions,
+zero failures/errors, and six explicit skips across Windows, Ubuntu and macOS
+with Python 3.10 and 3.12.
+
+| Check | Observed result | Evidence |
+|---|---|---|
+| Local complete suite | **113 passed, 1 skipped**, exit 0 | `.validation/v0.1.1-full-tests-path/` |
+| Local compilation | PASS | `python -m compileall -q src tests scripts` |
+| Hosted release matrix | **6 / 6 PASS**; 684 executions, zero failures/errors, 6 skips | GitHub Actions run `35347745740`; downloaded artifacts in `../build_artifacts/hosted-ci-35347745740-20260918/` |
+| Release wheel build and clean local validation | PASS | `../build_artifacts/release-0.1.1/crossrepro-0.1.1-py3-none-any.whl`; `scripts/validate_wheel.py` |
+| Public release wheel validation | PASS: fresh venv imported `0.1.1`; `crossrepro --help` passed | `.validation/release-v0.1.1-public/` |
+
+Release: `https://github.com/taopeng9192/crossrepro/releases/tag/v0.1.1`.
+Published wheel SHA-256:
+`c28599635aca851fbf7aeaf967b3c3a9618c0e20e97e296b4868c43497efac21`.
+Issue `#1` records the detached-child trigger and was closed after the public
+wheel validation. Case 001 is an isolated local evaluation of a public
+agent-browser issue; it is not an upstream-confirmed reproduction, contributor
+feedback, or a three-platform result. See `docs/cases/case-001-agent-browser-1407.md`.
+
 ## Release validation — 2026-09-18 / 0.1.0
 
 Status: **PUBLIC_REPOSITORY / V0.1.0_RELEASED / HOSTED_MATRIX_VALIDATED**.
