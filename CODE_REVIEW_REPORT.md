@@ -3,11 +3,11 @@
 ## 2026-09-18 当前审查与修复
 
 审查对象：交付包内源码、协议、测试、示例和 CI；依据 `plans/` 的 v0.1 范围与验收要求。
-当前目录已初始化为本地 Git `main` 分支，但没有提交或远端；本轮仍通过原始 ZIP
-和 SHA-256 清单核对变更。该状态不等于已经发布或触发 CI。
+当前目录已提交并推送到公开 Git `main` 分支；本轮仍通过原始 ZIP 和 SHA-256
+清单核对变更。公开仓库与托管 CI 不等于已经发布正式版本。
 这是主任务审查与复核，不冒称独立第三方审计。
 
-结论：**本地修复与 Windows 验收完成；正式发布门槛未完成**。详见 `VALIDATION_REPORT.md` 当前版本章节。
+结论：**本地修复、公开仓库与六组合托管验收已完成；正式版本等待最终版本提交的 CI 门槛**。详见 `VALIDATION_REPORT.md` 当前版本章节。
 
 | 优先级 | 原问题 / 触发条件 | 本轮处理与验证 |
 |---|---|---|
@@ -27,7 +27,7 @@
 跳过项是当前主机无法创建真实符号链接；未以 mock 或静态检查代替该环境验证。
 基线、失败记录、最终日志及差异位于 `../build_artifacts/`。
 
-范围限制：没有真实托管三平台执行证据，没有本轮 Linux/macOS 验证；没有外部使用、正式发布或申请提交。
+范围限制：已有真实托管三平台执行证据和 artifact 检查；仍没有外部使用、正式发布或申请提交。
 文本模式无法证明所有秘密格式都被发现；v0.1 不提供恶意命令沙箱、任意二进制扫描或并发文件系统事务。
 这些边界已写入 `docs/privacy.md` 和 `docs/repro-schema.md`。
 
@@ -90,6 +90,6 @@ added before release.
 
 ## Release recommendation
 
-Use this delivery as the baseline commit for the real repository, then run the
-platform work in `CODEX_NEXT_STEPS.md`. Do not call it final `v0.1.0` until
-Windows/macOS/GitHub Actions validation is green.
+The public repository has passed Windows/macOS/Linux hosted validation. Create
+the `v0.1.0` tag and GitHub Release only after the final release-version
+workflow is green.

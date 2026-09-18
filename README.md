@@ -1,5 +1,7 @@
 # CrossRepro
 
+[![Test](https://github.com/taopeng9192/crossrepro/actions/workflows/test.yml/badge.svg)](https://github.com/taopeng9192/crossrepro/actions/workflows/test.yml)
+
 > Turn “it fails on my machine” into a privacy-safe, portable, cross-platform reproduction.
 
 CrossRepro records a failing CLI/build/test command, minimizes and redacts the
@@ -12,14 +14,20 @@ returns one deterministic verdict:
 
 The verdict engine does not depend on an LLM.
 
-## Development snapshot
+## Install
 
-This package is a pre-release engineering baseline (`0.1.0.dev2`). Local Windows
-validation and its exact evidence are recorded in `VALIDATION_REPORT.md`.
-Real Linux/macOS and GitHub-hosted runner validation of this revision remains
-required before `v0.1.0`.
+Install the v0.1.0 release wheel:
 
-## Install for development
+```bash
+python -m pip install https://github.com/taopeng9192/crossrepro/releases/download/v0.1.0/crossrepro-0.1.0-py3-none-any.whl
+crossrepro --help
+```
+
+The release is validated on GitHub-hosted Windows, Ubuntu and macOS runners
+with Python 3.10 and 3.12. See `VALIDATION_REPORT.md` and the linked workflow
+for the exact evidence boundary.
+
+## Development install
 
 ```bash
 python -m venv .venv
@@ -58,7 +66,8 @@ crossrepro ci .crossrepro/latest/repro.yml
 The generated workflow installs CrossRepro from the checked-out repository by
 default (`--install-source .`). For another project's repository, specify an
 available CrossRepro wheel or published package requirement with
-`--install-source`; the development snapshot is not claimed to be on PyPI.
+`--install-source`; v0.1.0 is distributed through the GitHub release wheel, not
+claimed to be on PyPI.
 
 To run the three examples plus the capture/replay/bundle checks locally:
 
@@ -106,5 +115,5 @@ See `docs/repro-schema.md`.
 
 ## Current validation boundary
 
-See `VALIDATION_REPORT.md` for exactly what was verified locally and what still
-requires Codex/GitHub Actions on Windows and macOS.
+See `VALIDATION_REPORT.md` for exactly what was verified locally and in hosted
+GitHub Actions.

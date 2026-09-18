@@ -1,12 +1,16 @@
 # CrossRepro validation report
 
-## Current revision — 2026-09-18 / 0.1.0.dev2
+## Release preparation — 2026-09-18 / 0.1.0
 
-Status: **LOCAL_WINDOWS_VALIDATED / HOSTED_MATRIX_PENDING**.
+Status: **PUBLIC_REPOSITORY / HOSTED_MATRIX_VALIDATED / FINAL_CI_GATE**.
 
-The current source was tested on local Windows with Python 3.12.14. No hosted
-Windows, Linux or macOS run is claimed for this revision. The older report below
-describes the original dev0 Linux snapshot only.
+The current source was tested on local Windows with Python 3.12.14. The public
+repository is `https://github.com/taopeng9192/crossrepro`; the six-job hosted
+matrix for the release baseline passed at
+`https://github.com/taopeng9192/crossrepro/actions/runs/35338776666`. The
+version and release-documentation commit is also gated by that workflow before
+the `v0.1.0` tag is created. The older report below describes the original dev0
+Linux snapshot only.
 
 | Check | Observed result | Evidence |
 |---|---|---|
@@ -18,13 +22,17 @@ describes the original dev0 Linux snapshot only.
 | Three examples and full capture/replay/pack flow | PASS | `.validation/windows-dev2-final/validation.json` |
 | ZIP fixture-secret scan and all SHA-256 entries | PASS | `.validation/windows-dev2-final/example.crossrepro.zip` and validation JSON |
 | Final workflow YAML structure | PASS (3 OS × 2 Python versions) | `.github/workflows/test.yml` parsed locally |
-| Wheel build and byte comparison with source | PASS (26 Python files) | `../build_artifacts/validated-dev2/crossrepro-0.1.0.dev2-py3-none-any.whl` |
-| Clean venv install, isolated import, console entry, real capture/replay | PASS | `../build_artifacts/validated-dev2/wheel-install.json` |
+| Wheel build and byte comparison with source | PASS (26 Python files) | `../build_artifacts/release-0.1.0/crossrepro-0.1.0-py3-none-any.whl` |
+| Clean venv install, isolated import, console entry, real capture/replay | PASS | `../build_artifacts/release-0.1.0/wheel-install.json` |
+| Hosted Windows/Ubuntu/macOS × Python 3.10/3.12 | **6 / 6 PASS** | GitHub Actions run `35338776666`; downloaded artifacts in `../build_artifacts/hosted-ci-35338776666-20260918/` |
 
-The skipped test is `test_pack_refuses_symlink_to_outside`: this host denied
-symlink creation. It was not relabeled as a pass. Other security unit tests
-include synthetic/mocked executions where appropriate; the three examples,
-end-to-end flow and wheel-install capture/replay used real subprocesses.
+The local Windows run skipped `test_pack_refuses_symlink_to_outside` because
+this host denied symlink creation. The hosted matrix did not treat that local
+result as a pass: Linux had one explicit skip in each Python version, while
+Windows and macOS ran all 112 tests. All hosted jobs had zero failures/errors.
+Other security unit tests include synthetic/mocked executions where appropriate;
+the three examples, end-to-end flow and wheel-install capture/replay used real
+subprocesses.
 
 Current Windows results:
 
@@ -33,6 +41,12 @@ Current Windows results:
 | secret-redaction | 3 | REPRODUCED |
 | missing-runtime | none | ENVIRONMENT_BLOCKED |
 | shell-glob | 2 | REPRODUCED |
+
+Hosted example results match the intended platform distinction: secret-redaction
+reproduced and missing-runtime was environment-blocked on every runner;
+shell-glob reproduced on Windows and was not reproduced on Linux/macOS. Every
+downloaded artifact passed the bundle privacy and SHA-256 checks; a search for
+the fixture secret returned no matches.
 
 Environment dependencies: Click 8.5.0, PyYAML 6.0.3, pytest 9.1.1,
 pytest-cov 7.1.0, coverage 7.16.1. Tests prepended `.venv/Scripts` to the child
@@ -43,8 +57,8 @@ inside that temporary subprocess after the first attempt exposed a host
 configuration conflict. The successful clean install fetched declared runtime
 dependencies and imported CrossRepro from the new venv, outside the source tree.
 
-Wheel: `../build_artifacts/validated-dev2/crossrepro-0.1.0.dev2-py3-none-any.whl`.
-SHA-256: `2f6c0411276da8bce9529e5ec0b4b9dd1ddc54934240bde0a4bae62c82390eb2`.
+Wheel: `../build_artifacts/release-0.1.0/crossrepro-0.1.0-py3-none-any.whl`.
+SHA-256: `cd676c6808d3f4534b6245f627ba1d28ff3d7933a2849563ad4a83e8aed17617`.
 The wheel's 26 packaged Python files match the source bytes. Its metadata
 declares `License-Expression: MIT` and includes `LICENSE`; the earlier
 setuptools license-metadata deprecation warning is absent from this build.
@@ -61,11 +75,9 @@ python scripts/validate_wheel.py --wheel-dir dist --report .validation/wheel.jso
 ```
 
 Do not promote the historical Linux result below to validation of this revision.
-Before v0.1.0: run the updated six-job Windows/Linux/macOS × Python 3.10/3.12
-workflow in an authorized repository, inspect reports/bundles/wheel artifacts,
-resolve failures and the symlink coverage gap, then obtain release authorization.
-The local repository is initialized on `main`, but has no commit, configured
-remote, tag, publication or hosted CI result.
+The local repository has an initial `main` commit and tracks the public remote.
+The release tag and GitHub Release are created only after the version commit's
+six-job workflow passes.
 
 ## Historical report — original 2026-09-17 dev0 delivery
 

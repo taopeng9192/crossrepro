@@ -3,20 +3,18 @@
 ## Updated status — 2026-09-18
 
 Local review, fixes, full Windows tests (111 passed, 1 symlink test skipped),
-three real examples, bundle checks and clean dev2 wheel installation are done.
-See `VALIDATION_REPORT.md` and `CODE_REVIEW_REPORT.md`; do not restart from the
+three real examples, bundle checks and clean wheel installation are done. The
+public repository and its first six-job GitHub Actions matrix are also complete:
+all six jobs passed, and downloaded artifacts were inspected. See
+`VALIDATION_REPORT.md` and `CODE_REVIEW_REPORT.md`; do not restart from the
 original dev0 recommendation below or treat the older Linux results as current.
 
-Next external gate needs an explicitly selected GitHub repository and permission
-to push/trigger CI. The repository root should be the `crossrepro/` directory,
-so `.github/workflows/test.yml` and `pyproject.toml` are at the expected locations.
-Do not upload `.venv`, caches or unrestricted raw logs. The prepared matrix runs
-Windows/Linux/macOS with Python 3.10 and 3.12, real examples/bundles and clean
-wheel installation. Inspect each artifact before considering a v0.1.0 release.
+The repository is `https://github.com/taopeng9192/crossrepro`; the first hosted
+matrix is `https://github.com/taopeng9192/crossrepro/actions/runs/35338776666`.
+The immediate release gate is the version-commit matrix, followed by tag
+`v0.1.0`, the GitHub Release and a clean remote-wheel install check.
 
-Current status: `LOCAL_WINDOWS_VALIDATED / HOSTED_MATRIX_PENDING`.
-The local `crossrepro/` repository is initialized on `main`, but has no commit
-or remote. No push, release or external submission has been performed.
+Current status: `PUBLIC_REPOSITORY / HOSTED_MATRIX_VALIDATED / FINAL_CI_GATE`.
 
 ## Original delivery next steps (historical context)
 
@@ -25,14 +23,10 @@ The environment-independent core is provided in this delivery. Do **not** mark
 
 ## Required engineering validation
 
-1. Create/push the repository and install from a clean clone.
-2. Run the full test suite on Windows, Linux and macOS.
-3. Run all three examples on GitHub-hosted runners.
-4. Confirm shell quoting/glob behavior on PowerShell and Bash.
-5. Inspect generated `.crossrepro.zip` artifacts on each OS.
-6. Fix every discovered platform issue and add a regression test.
-7. Re-run all checks until green.
-8. Only then tag/release `v0.1.0`.
+1. Run the release-version workflow and inspect its six artifacts.
+2. Tag and publish `v0.1.0` with the verified wheel attached.
+3. Install that public wheel in a fresh environment.
+4. Begin real OSS validation only after the release exists.
 
 ## Required product validation after release
 

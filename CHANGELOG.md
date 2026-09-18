@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 2026-09-18
+
+### Release validation
+
+- Publish the independent public repository and validate the complete matrix on
+  GitHub-hosted Windows, Ubuntu and macOS runners with Python 3.10 and 3.12.
+- Inspect all six uploaded evidence bundles: 112 tests per job with zero
+  failures/errors; platform-specific shell-glob verdicts; bundle privacy scan,
+  SHA-256 verification, wheel build and clean installation all pass.
 
 ### 0.1.0.dev2 — release-readiness follow-up (2026-09-18)
 
