@@ -9,24 +9,34 @@ all six jobs passed, and downloaded artifacts were inspected. See
 `VALIDATION_REPORT.md` and `CODE_REVIEW_REPORT.md`; do not restart from the
 original dev0 recommendation below or treat the older Linux results as current.
 
-The repository is `https://github.com/taopeng9192/crossrepro`; the first hosted
-matrix is `https://github.com/taopeng9192/crossrepro/actions/runs/35338776666`.
-The immediate release gate is the version-commit matrix, followed by tag
-`v0.1.0`, the GitHub Release and a clean remote-wheel install check.
+The repository is `https://github.com/taopeng9192/crossrepro`; release
+`v0.1.0` is published at
+`https://github.com/taopeng9192/crossrepro/releases/tag/v0.1.0`. Its final
+version-commit matrix passed at
+`https://github.com/taopeng9192/crossrepro/actions/runs/35339802773`: all six
+Windows/Ubuntu/macOS × Python 3.10/3.12 jobs completed successfully. The
+published wheel was fetched from the release URL into a new isolated venv,
+imported as `0.1.0`, and its `crossrepro --help` entry point succeeded.
 
-Current status: `PUBLIC_REPOSITORY / HOSTED_MATRIX_VALIDATED / FINAL_CI_GATE`.
+Current status: `PUBLIC_REPOSITORY / V0.1.0_RELEASED / HOSTED_MATRIX_VALIDATED`.
 
 ## Original delivery next steps (historical context)
 
 The environment-independent core is provided in this delivery. Do **not** mark
 `v0.1.0` complete until the following are done in the real GitHub repository.
 
-## Required engineering validation
+## Completed engineering validation
 
-1. Run the release-version workflow and inspect its six artifacts.
-2. Tag and publish `v0.1.0` with the verified wheel attached.
-3. Install that public wheel in a fresh environment.
-4. Begin real OSS validation only after the release exists.
+1. The release-version workflow passed and all six downloaded JUnit reports
+   have zero failures/errors (672 test executions in total; two Linux symlink
+   skips are explicit).
+2. Annotated tag `v0.1.0` resolves to commit
+   `86bc39042ab9dbabb028cf206c5a1d70d54c7d19`; the public GitHub Release has
+   the verified wheel attached.
+3. The wheel installed from its public release URL in a fresh isolated venv;
+   the installed version and console entry point were verified.
+4. Stage 10 real-OSS validation may now begin. No external usage, feedback or
+   upstream interaction is claimed yet.
 
 ## Required product validation after release
 

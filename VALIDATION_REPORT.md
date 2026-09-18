@@ -1,16 +1,18 @@
 # CrossRepro validation report
 
-## Release preparation — 2026-09-18 / 0.1.0
+## Release validation — 2026-09-18 / 0.1.0
 
-Status: **PUBLIC_REPOSITORY / HOSTED_MATRIX_VALIDATED / FINAL_CI_GATE**.
+Status: **PUBLIC_REPOSITORY / V0.1.0_RELEASED / HOSTED_MATRIX_VALIDATED**.
 
 The current source was tested on local Windows with Python 3.12.14. The public
-repository is `https://github.com/taopeng9192/crossrepro`; the six-job hosted
-matrix for the release baseline passed at
-`https://github.com/taopeng9192/crossrepro/actions/runs/35338776666`. The
-version and release-documentation commit is also gated by that workflow before
-the `v0.1.0` tag is created. The older report below describes the original dev0
-Linux snapshot only.
+repository is `https://github.com/taopeng9192/crossrepro`; its final
+version/release-documentation commit passed the six-job hosted matrix at
+`https://github.com/taopeng9192/crossrepro/actions/runs/35339802773` before
+annotated tag `v0.1.0` and the public GitHub Release were created. The release
+is `https://github.com/taopeng9192/crossrepro/releases/tag/v0.1.0`; its wheel
+was downloaded from the public release URL into a fresh isolated venv and
+verified by import and console entry point. The older report below describes
+the original dev0 Linux snapshot only.
 
 | Check | Observed result | Evidence |
 |---|---|---|
@@ -24,7 +26,8 @@ Linux snapshot only.
 | Final workflow YAML structure | PASS (3 OS × 2 Python versions) | `.github/workflows/test.yml` parsed locally |
 | Wheel build and byte comparison with source | PASS (26 Python files) | `../build_artifacts/release-0.1.0/crossrepro-0.1.0-py3-none-any.whl` |
 | Clean venv install, isolated import, console entry, real capture/replay | PASS | `../build_artifacts/release-0.1.0/wheel-install.json` |
-| Hosted Windows/Ubuntu/macOS × Python 3.10/3.12 | **6 / 6 PASS** | GitHub Actions run `35338776666`; downloaded artifacts in `../build_artifacts/hosted-ci-35338776666-20260918/` |
+| Hosted release matrix Windows/Ubuntu/macOS × Python 3.10/3.12 | **6 / 6 PASS** | GitHub Actions run `35339802773`; downloaded artifacts in `../build_artifacts/hosted-ci-35339802773-20260918/` |
+| Public release wheel install | PASS | Fresh isolated venv installed `0.1.0`; import and `crossrepro --help` succeeded |
 
 The local Windows run skipped `test_pack_refuses_symlink_to_outside` because
 this host denied symlink creation. The hosted matrix did not treat that local
@@ -75,9 +78,11 @@ python scripts/validate_wheel.py --wheel-dir dist --report .validation/wheel.jso
 ```
 
 Do not promote the historical Linux result below to validation of this revision.
-The local repository has an initial `main` commit and tracks the public remote.
-The release tag and GitHub Release are created only after the version commit's
-six-job workflow passes.
+The public `main` branch contains the version/release-documentation commit
+`86bc39042ab9dbabb028cf206c5a1d70d54c7d19`. Its six-job workflow passed before
+annotated tag `v0.1.0` and the non-draft, non-prerelease GitHub Release were
+created. The published wheel SHA-256 is
+`cd676c6808d3f4534b6245f627ba1d28ff3d7933a2849563ad4a83e8aed17617`.
 
 ## Historical report — original 2026-09-17 dev0 delivery
 
