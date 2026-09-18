@@ -13,6 +13,9 @@ import subprocess
 import time
 
 
+_TIMEOUT_DRAIN_SECONDS = 3
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -67,12 +70,16 @@ def decode_output(value: bytes | None) -> str:
 def _stop_process_tree(process: subprocess.Popen) -> None:
     """Stop only the process tree started for this reproduction."""
     if os.name == "nt":
-        subprocess.run(
-            [str(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "taskkill.exe"),
-             "/PID", str(process.pid), "/T", "/F"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        )
+        try:
+            subprocess.run(
+                [str(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "taskkill.exe"),
+                 "/PID", str(process.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                timeout=_TIMEOUT_DRAIN_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            pass
         if process.poll() is None:
             process.kill()
     else:
@@ -80,6 +87,20 @@ def _stop_process_tree(process: subprocess.Popen) -> None:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
+
+
+def _close_capture_streams(process: subprocess.Popen) -> None:
+    """Release local pipe handles when a detached child keeps them open."""
+    for stream in (process.stdout, process.stderr):
+        if stream is not None:
+            try:
+                stream.close()
+            except OSError:
+                pass
+
+
+def _partial_bytes(value: bytes | None) -> bytes:
+    return value or b""
 
 
 @dataclass(slots=True)
@@ -112,23 +133,45 @@ def run_command(
     started_at = utc_now()
     started_monotonic = time.monotonic()
     options = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
-    with subprocess.Popen(
-            shell_argv(selected_shell, command),
-            cwd=str(cwd) if cwd else None,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            **options,
-    ) as process:
+    process = subprocess.Popen(
+        shell_argv(selected_shell, command),
+        cwd=str(cwd) if cwd else None,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **options,
+    )
+    close_capture_streams = True
+    try:
         try:
             stdout_bytes, stderr_bytes = process.communicate(timeout=timeout)
             exit_code = process.returncode
             timed_out = False
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as timeout_error:
             _stop_process_tree(process)
-            stdout_bytes, stderr_bytes = process.communicate()
+            try:
+                stdout_bytes, stderr_bytes = process.communicate(timeout=_TIMEOUT_DRAIN_SECONDS)
+            except subprocess.TimeoutExpired as drain_error:
+                # A detached descendant can outlive the command tree and keep an
+                # inherited stdout/stderr pipe open. Do not let that defeat the
+                # caller's timeout; preserve whatever output communicate exposed.
+                # Closing a stream while communicate's Windows reader thread is
+                # blocked on it can block too. Those daemon threads are allowed
+                # to finish after the timed-out result is returned.
+                close_capture_streams = False
+                stdout_bytes = _partial_bytes(drain_error.stdout) or _partial_bytes(timeout_error.stdout)
+                stderr_bytes = _partial_bytes(drain_error.stderr) or _partial_bytes(timeout_error.stderr)
             exit_code = None
             timed_out = True
+    finally:
+        if process.poll() is None:
+            _stop_process_tree(process)
+            try:
+                process.wait(timeout=_TIMEOUT_DRAIN_SECONDS)
+            except subprocess.TimeoutExpired:
+                pass
+        if close_capture_streams:
+            _close_capture_streams(process)
     stdout = decode_output(stdout_bytes)
     stderr = decode_output(stderr_bytes)
     duration_ms = int((time.monotonic() - started_monotonic) * 1000)

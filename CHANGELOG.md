@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.1 — 2026-09-18
+
+### Timeout cleanup
+
+- Bound Windows `taskkill` and post-timeout output draining so a detached child
+  that retains inherited capture pipes cannot make `collect` wait forever.
+- Return sanitized timeout evidence for manual review when residual pipe readers
+  cannot finish, and cover that path with unit tests.
+
+### Real OSS validation record
+
+- Record the first isolated evaluation of a public upstream CLI issue in
+  `docs/cases/case-001-agent-browser-1407.md`. It is an observed timeout, not
+  an upstream maintainer confirmation or a deterministic replay verdict.
+
 ## 0.1.0 — 2026-09-18
 
 ### Release validation

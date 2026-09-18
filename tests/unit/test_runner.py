@@ -1,6 +1,7 @@
 import sys
 import base64
 import shutil
+import subprocess
 import pytest
 from pathlib import Path
 
@@ -32,6 +33,78 @@ def test_run_command_timeout(tmp_path: Path):
     result = run_command(command, cwd=tmp_path, timeout=1)
     assert result.exit_code is None
     assert result.timed_out
+
+
+def test_timeout_returns_when_detached_child_keeps_capture_pipes_open(monkeypatch, tmp_path: Path):
+    import crossrepro.capture.runner as mod
+
+    class Pipe:
+        def __init__(self):
+            self.closed = False
+
+        def close(self):
+            self.closed = True
+
+    class Process:
+        def __init__(self):
+            self.pid = 123
+            self.returncode = None
+            self.stdout = Pipe()
+            self.stderr = Pipe()
+            self.calls = 0
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def poll(self):
+            return 0
+
+        def communicate(self, timeout=None):
+            self.calls += 1
+            if self.calls == 1:
+                raise subprocess.TimeoutExpired("test", timeout, output=b"before", stderr=b"warn")
+            raise subprocess.TimeoutExpired("test", timeout, output=b"after", stderr=b"later")
+
+    process = Process()
+    monkeypatch.setattr(mod.subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr(mod, "_stop_process_tree", lambda value: None)
+
+    result = run_command("test", cwd=tmp_path, timeout=1)
+
+    assert result.timed_out
+    assert result.exit_code is None
+    assert result.stdout == "after"
+    assert result.stderr == "later"
+    assert not process.stdout.closed
+    assert not process.stderr.closed
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows taskkill behavior")
+def test_windows_taskkill_timeout_falls_back_to_root_kill(monkeypatch):
+    import crossrepro.capture.runner as mod
+
+    class Process:
+        pid = 123
+
+        def poll(self):
+            return None
+
+        def kill(self):
+            self.killed = True
+
+    process = Process()
+    monkeypatch.setattr(
+        mod.subprocess,
+        "run",
+        lambda *args, **kwargs: (_ for _ in ()).throw(subprocess.TimeoutExpired("taskkill", kwargs["timeout"])),
+    )
+
+    mod._stop_process_tree(process)
+
+    assert process.killed
 
 
 def test_default_shell_windows_preferences(monkeypatch):

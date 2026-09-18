@@ -16,10 +16,10 @@ The verdict engine does not depend on an LLM.
 
 ## Install
 
-Install the v0.1.0 release wheel:
+Install the v0.1.1 release wheel:
 
 ```bash
-python -m pip install https://github.com/taopeng9192/crossrepro/releases/download/v0.1.0/crossrepro-0.1.0-py3-none-any.whl
+python -m pip install https://github.com/taopeng9192/crossrepro/releases/download/v0.1.1/crossrepro-0.1.1-py3-none-any.whl
 crossrepro --help
 ```
 
