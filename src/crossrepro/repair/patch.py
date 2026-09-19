@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import re
+import time
 
 
 class PatchError(ValueError):
@@ -13,6 +15,13 @@ class PatchError(ValueError):
 class FilePatch:
     path: str
     hunks: list[tuple[int, list[str]]]
+
+
+@dataclass(slots=True)
+class FileSnapshot:
+    text: str
+    atime_ns: int
+    mtime_ns: int
 
 
 _HUNK = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -105,9 +114,9 @@ def stage_patch(
     patch: str,
     *,
     allowed_paths: set[str] | None = None,
-) -> tuple[dict[Path, str], dict[Path, str]]:
+) -> tuple[dict[Path, FileSnapshot], dict[Path, str]]:
     files = parse_unified_diff(patch)
-    original: dict[Path, str] = {}
+    original: dict[Path, FileSnapshot] = {}
     updated: dict[Path, str] = {}
     root = repo.resolve()
     for item in files:
@@ -124,20 +133,25 @@ def stage_patch(
             text = target.read_text(encoding="utf-8")
         except UnicodeDecodeError as exc:
             raise PatchError(f"patch target is not UTF-8 text: {item.path}") from exc
-        original[target] = text
+        metadata = target.stat()
+        original[target] = FileSnapshot(text=text, atime_ns=metadata.st_atime_ns, mtime_ns=metadata.st_mtime_ns)
         updated[target] = _apply_to_text(text, item)
     return original, updated
 
 
-def write_staged_patch(original: dict[Path, str], updated: dict[Path, str]) -> None:
+def write_staged_patch(original: dict[Path, FileSnapshot], updated: dict[Path, str]) -> None:
     for target, new_text in updated.items():
-        if target.read_text(encoding="utf-8") != original[target]:
+        if target.read_text(encoding="utf-8") != original[target].text:
             raise PatchError(f"refusing to overwrite concurrently changed file: {target}")
     for target, new_text in updated.items():
         target.write_text(new_text, encoding="utf-8", newline="\n")
+        snapshot = original[target]
+        os.utime(target, ns=(snapshot.atime_ns, max(time.time_ns(), snapshot.mtime_ns + 1_000_000_000)))
 
 
-def restore_staged_patch(original: dict[Path, str], updated: dict[Path, str]) -> None:
+def restore_staged_patch(original: dict[Path, FileSnapshot], updated: dict[Path, str]) -> None:
     for target, new_text in updated.items():
         if target.exists() and target.read_text(encoding="utf-8") == new_text:
-            target.write_text(original[target], encoding="utf-8", newline="\n")
+            snapshot = original[target]
+            target.write_text(snapshot.text, encoding="utf-8", newline="\n")
+            os.utime(target, ns=(snapshot.atime_ns, snapshot.mtime_ns))

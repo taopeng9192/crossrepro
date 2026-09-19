@@ -25,7 +25,8 @@ class FakeProvider:
 def python_command(code: str) -> str:
     executable = str(sys.executable)
     if default_shell() in {"pwsh", "powershell"}:
-        return f"& '{executable.replace("'", "''")}' -c '{code}'"
+        quoted_executable = executable.replace("'", "''")
+        return "& '{}' -c '{}'".format(quoted_executable, code)
     return f'"{executable}" -c "{code}"'
 
 
