@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add `crossrepro fix`, a test-constrained repair flow. It establishes a
+  baseline failure, accepts one provider-generated unified diff, applies it
+  only with `--apply`, reruns the supplied test, and reverts an unsuccessful
+  verification.
+- Add an optional OpenAI Responses API provider (`crossrepro[agent]`). It can
+  return a patch but has no shell or filesystem tool access.
+
 - Check Windows Python app aliases with a bounded startup probe so an unavailable
   Store placeholder produces `ENVIRONMENT_BLOCKED`. Preserve working Python
   aliases and discovery of unrelated application aliases.

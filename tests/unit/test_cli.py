@@ -23,7 +23,7 @@ def fake_result(command: str, code=7):
 def test_help():
     result = CliRunner().invoke(main, ["--help"])
     assert result.exit_code == 0
-    for name in ("collect", "replay", "pack", "ci"):
+    for name in ("collect", "replay", "pack", "ci", "fix"):
         assert name in result.output
 
 

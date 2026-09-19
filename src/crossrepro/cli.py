@@ -17,6 +17,9 @@ from crossrepro.capture.runner import run_command, default_shell
 from crossrepro.ci.github import generate_github_workflow
 from crossrepro.constants import DEFAULT_LATEST_DIR, SUPPORTED_SHELLS
 from crossrepro.redact.engine import redact_text, redact_data, redact_json
+from crossrepro.repair.models import FixStatus
+from crossrepro.repair.providers import FilePatchProvider, OpenAIRepairProvider
+from crossrepro.repair.runner import fix as run_fix
 from crossrepro.replay.runner import replay as run_replay
 from crossrepro.schema.loader import ReproLoadError, load_repro
 from crossrepro.schema.validator import InvalidReproSpec, validate_repro
@@ -244,6 +247,51 @@ def ci(repro_file: Path, output: Path, install_source: str) -> None:
     except (ValueError, OSError) as exc:
         raise click.ClickException(redact_text(str(exc)).text) from exc
     click.echo(f"Workflow: {generated}")
+
+
+@main.command()
+@click.option("--repo", type=click.Path(path_type=Path, exists=True, file_okay=False), default=Path("."), show_default=True, help="Target project to repair.")
+@click.option("--test", "test_command", required=True, help="Command that currently fails and should pass after the repair.")
+@click.option("--model", default=None, help="OpenAI model used to propose a patch. Required unless --patch-file is used.")
+@click.option("--patch-file", type=click.Path(path_type=Path, exists=True, dir_okay=False), default=None, help="Previously reviewed unified diff to validate and optionally apply without calling an API.")
+@click.option("--include", "includes", multiple=True, type=click.Path(path_type=str), help="Source file to send to the provider. Repeat to choose context explicitly.")
+@click.option("--apply", is_flag=True, help="Apply the candidate to the target project only while verification runs. Failed verification is reverted.")
+@click.option("--timeout", type=click.IntRange(min=1), default=120, show_default=True)
+@click.option("--out", type=click.Path(path_type=Path), default=Path(".crossrepro/fix"), show_default=True, help="Directory for candidate.patch and fix-report.json.")
+def fix(repo: Path, test_command: str, model: str | None, patch_file: Path | None, includes: tuple[str, ...], apply: bool, timeout: int, out: Path) -> None:
+    """Propose and test a repair for a failing command.
+
+    The OpenAI provider receives selected text source and the sanitized failed-test
+    output. A provider can only return a unified diff; CrossRepro validates and
+    applies that diff itself. Use --apply to retain a verified repair.
+    """
+    root = repo.resolve()
+    output = out if out.is_absolute() else root / out
+    if patch_file:
+        provider = FilePatchProvider(patch_file)
+    elif model:
+        provider = OpenAIRepairProvider(model=model)
+    else:
+        raise click.ClickException("provide --model for an API repair, or --patch-file for a reviewed candidate")
+    result = run_fix(
+        repo=root,
+        test_command=test_command,
+        provider=provider,
+        patch_path=output / "candidate.patch",
+        report_path=output / "fix-report.json",
+        apply=apply,
+        timeout=timeout,
+        includes=includes,
+    )
+    click.echo(f"{result.status.value}: {result.summary}")
+    if result.patch_path:
+        click.echo(f"Patch: {result.patch_path}")
+    if result.changed_files:
+        click.echo("Changed files: " + ", ".join(result.changed_files))
+    if result.detail:
+        click.echo("Detail: " + result.detail)
+    if result.status is not FixStatus.FIXED:
+        raise click.exceptions.Exit(2)
 
 
 if __name__ == "__main__":

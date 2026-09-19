@@ -1,6 +1,8 @@
 # Architecture
 
 ```text
+failing test -> repair provider -> validated unified diff -> test verification -> FIXED/revert
+                                      \
 collect -> sanitize -> repro.yml -> replay -> verdict -> bundle/CI
 ```
 
@@ -13,7 +15,12 @@ Module boundaries are intentionally strict:
 - `verdict`: compare execution to a bug signature
 - `bundle`: manifest/checksum/archive
 - `ci`: generate GitHub Actions workflow
+- `repair`: assemble bounded source context, ask a provider for a unified diff,
+  validate/apply that diff, rerun the user-supplied test, and revert a failed
+  verification
 - `cli`: orchestration only
 
-The v0.1 core has no web server, database, Docker dependency, MCP server or LLM
-dependency.
+The core has no web server, database, Docker dependency, MCP server, or local
+model. The optional `agent` extra supplies the OpenAI Responses API adapter.
+The adapter receives source context and can return a patch only; it does not
+receive shell or filesystem tools.

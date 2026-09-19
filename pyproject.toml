@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crossrepro"
-version = "0.1.1"
-description = "Privacy-safe, portable, cross-platform bug reproduction."
+version = "0.2.0"
+description = "Test-constrained software repair with portable reproduction evidence."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -15,7 +15,7 @@ dependencies = [
     "click>=8.1",
     "PyYAML>=6.0",
 ]
-keywords = ["bug", "reproduction", "cli", "debugging", "cross-platform"]
+keywords = ["bug", "repair", "agent", "reproduction", "cli", "debugging", "cross-platform"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Programming Language :: Python :: 3",
@@ -28,6 +28,9 @@ classifiers = [
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
+]
+agent = [
+    "openai>=2.0",
 ]
 
 [project.scripts]

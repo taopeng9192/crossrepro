@@ -1,41 +1,85 @@
-# CrossRepro — turn “it fails on my machine” into a reproducible bug report
+# CrossRepro — turn a failing test into a verified repair
 
 [![Test](https://github.com/taopeng9192/crossrepro/actions/workflows/test.yml/badge.svg)](https://github.com/taopeng9192/crossrepro/actions/workflows/test.yml)
 
-CrossRepro captures a failing command, removes common sensitive data from the
-evidence, describes the expected failure in `repro.yml`, and replays it on
-another machine. It gives a deterministic answer instead of asking someone to
-guess from a screenshot or a long chat log.
+CrossRepro repairs a target repository from a failing command. Its repair agent
+proposes a narrow unified diff; CrossRepro validates that diff and reruns the
+same command. It reports `FIXED` only when the command failed before the change
+and passes after it.
 
-Use it when a CLI command, build, test, or script fails for you but cannot be
-reproduced by a teammate, a project maintainer, or CI.
+Use it when a CLI command, build, test, or script fails and you need a
+reviewable, test-verified candidate fix rather than a screenshot or a guess.
 
-> **中文简介：** CrossRepro 用来把“我电脑上报错”变成别人可以验证的复现材料：记录失败命令、脱敏日志和最小环境信息，生成 `repro.yml`，然后在另一环境重放并给出明确结果。它不修复目标程序，也不是沙箱。
+> **中文简介：** CrossRepro 用失败测试驱动修复：agent 只生成统一 diff，程序校验补丁、重跑原测试，并且只有测试从失败变为通过才输出 `FIXED`。复现和证据打包仍可用于定位问题，但产品目标是修复代码。
 
 ## The problem it solves
 
-A useful bug report needs more than “command X failed”. The recipient needs to
-know which command ran, which working directory and tools it used, what output
-proves the problem, and whether their result is comparable to yours.
+A reliable repair needs more than “ask a model to change code”. It must know
+which test is broken, make a minimal patch, and prove that the exact test now
+passes. Otherwise a patch is only an unverified suggestion.
 
 CrossRepro provides that workflow:
 
 ```text
 failing command
-  → collect: save sanitized evidence and create a repro.yml draft
-  → edit repro.yml: define what counts as the bug
-  → replay: run it in the target environment and evaluate the result
-  → pack: create a shareable evidence bundle with checksums
+  → fix: run and confirm the baseline failure
+  → agent: return one constrained unified diff
+  → CrossRepro: validate and apply the diff
+  → fix: rerun the same command
+  → FIXED only if the command now passes; otherwise revert the patch
 ```
 
-It is useful for examples such as:
+The legacy reproduction commands remain useful for examples such as:
 
 - `npm test` fails on Windows but succeeds in CI;
 - a Python script fails only on one developer machine;
 - PowerShell and Bash interpret the same command differently;
 - an open-source issue needs a small, verifiable reproduction package.
 
-## Understand the result first
+## Repair a project
+
+Install the optional API provider after installing CrossRepro:
+
+```powershell
+python -m pip install -e ".[agent]"
+$env:OPENAI_API_KEY = "<your API key>"
+```
+
+Then run a known failing test from any target repository. Start without
+`--apply`: this writes a candidate patch and report, but leaves the target
+source unchanged.
+
+```powershell
+crossrepro fix --repo C:\source\target-project --test "python -m pytest tests/test_login.py" --model <model-id> --include src\login.py
+```
+
+Review `.crossrepro/fix/candidate.patch`. To apply that exact candidate and
+retain it only when the test passes, validate it with `--patch-file --apply`:
+
+```powershell
+crossrepro fix --repo C:\source\target-project --test "python -m pytest tests/test_login.py" --patch-file C:\source\target-project\.crossrepro\fix\candidate.patch --include src\login.py --apply
+```
+
+`--include` is optional. When omitted, CrossRepro selects supported UTF-8 source
+files, skips common dependency/build directories and `.env` files, and limits
+the project context to 90 KB. With an API repair, the selected source and
+sanitized test output are sent to the configured provider. Do not use an
+external provider for source code you are not authorized to share.
+
+| Repair status | Meaning |
+|---|---|
+| `FIXED` | The supplied test failed before the patch and passed after it. The change remains in the target repository. |
+| `CANDIDATE` | A valid patch was saved, but `--apply` was not used. Target source is unchanged. |
+| `BASELINE_PASSED` | The supplied command already passed, or did not complete with a usable failure. No patch was requested. |
+| `PATCH_REJECTED` | The provider returned a malformed, unsafe, stale, or unsupported diff. Target source is unchanged. |
+| `VERIFICATION_FAILED` | The patch was applied but the supplied test still failed; CrossRepro reverted the patch. |
+| `PROVIDER_ERROR` | The API key, optional dependency, or provider response was unavailable or invalid. |
+
+CrossRepro never commits, pushes, upgrades dependencies, or runs commands chosen
+by the provider. The provider can only return a diff for existing UTF-8 source
+files; CrossRepro runs only the `--test` command supplied by you.
+
+## Reproduce a problem when a fix needs better evidence
 
 `replay` produces one of these business results:
 
@@ -194,11 +238,15 @@ The examples demonstrate:
 
 ## Safety and limits
 
-- CrossRepro does **not** fix the program you are investigating.
+- Repair quality depends on the failing command. A command that does not cover
+  the bug cannot prove that the repair is correct.
+- `--apply` writes the provider's candidate change to the target repository
+  temporarily. CrossRepro reverts it if the supplied test fails, but you should
+  still inspect a verified diff before committing it.
 - It is not a sandbox: replay executes the authored commands with your current
   user permissions. Inspect commands from an untrusted package before running them.
-- It has no web service, database, Docker requirement, MCP server, or LLM.
-  Verdicts come from the checkable conditions in `repro.yml`.
+- The optional OpenAI provider is an API integration, not a local model. It is
+  not used unless you invoke `fix` with a configured API key.
 - It records a small allowlist of environment metadata, rather than dumping the
   full process environment. It redacts common keys, cookies, authorization
   headers, private keys, emails, and user-home paths; see the
@@ -208,17 +256,24 @@ The examples demonstrate:
 
 ## 中文快速上手
 
-1. 安装 Python 3.10+，按上面的 Windows 或 macOS/Linux 命令从本仓库安装。
-2. 在目标项目目录执行：
+1. 安装 Python 3.10+，从本仓库安装后执行 `python -m pip install -e ".[agent]"`，并设置 `OPENAI_API_KEY`。
+2. 先生成候选修复（不修改目标源码）：
+
+   ```powershell
+   crossrepro fix --repo C:\目标项目 --test "python -m pytest tests/test_login.py" --model <model-id> --include src\login.py
+   ```
+
+3. 查看 `.crossrepro/fix/candidate.patch`；确认后用 `--patch-file <该补丁> --apply` 验证同一份补丁。只有原测试由失败变通过时，补丁才会保留，并显示 `FIXED`。
+4. 如需把问题交给他人复查，再使用以下复现流程：
 
    ```powershell
    crossrepro collect --command-text "<原始失败命令>" --out .crossrepro/demo
    ```
 
-3. 编辑 `.crossrepro/demo/repro.yml`，补充“出现什么错误、退出码或文件状态才算问题仍存在”。
-4. 执行 `crossrepro replay ... --report report.json` 查看三种结果：
+5. 编辑 `.crossrepro/demo/repro.yml`，补充“出现什么错误、退出码或文件状态才算问题仍存在”。
+6. 执行 `crossrepro replay ... --report report.json` 查看三种结果：
    `REPRODUCED` 为已复现，`NOT_REPRODUCED` 为未复现，`ENVIRONMENT_BLOCKED` 为环境未准备好。
-5. 执行 `crossrepro pack` 生成分享包。包里没有项目源码和依赖，接收方需要自行准备。
+7. 执行 `crossrepro pack` 生成分享包。包里没有项目源码和依赖，接收方需要自行准备。
 
 ## More documentation
 
