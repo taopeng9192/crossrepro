@@ -1,4 +1,8 @@
+import os
 from pathlib import Path
+import sys
+
+import pytest
 
 from crossrepro.replay.runner import replay
 from crossrepro.schema.loader import load_repro
@@ -6,6 +10,12 @@ from crossrepro.schema.validator import validate_repro
 from crossrepro.verdict.evaluator import Verdict, evaluate
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(autouse=True)
+def use_test_python(monkeypatch):
+    """Examples requiring ``python`` use the interpreter running this suite."""
+    monkeypatch.setenv("PATH", str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", ""))
 
 
 def test_secret_example_replays_locally():

@@ -21,6 +21,12 @@ sanitized `execution` and `result` fields in the report, then install or select
 the required runtime, shell or project dependency before replaying. This verdict
 does not establish whether the underlying bug reproduces.
 
+On Windows, an App Installer `python.exe` alias may be discoverable even when
+it cannot start Python. CrossRepro probes Python app aliases with a five-second
+limit and reports `ENVIRONMENT_BLOCKED` if startup fails. Working Python app
+aliases remain supported. Activate your virtual environment or select a working
+Python on PATH before replaying. CrossRepro does not modify the system PATH.
+
 ## A shell command returns an unexpected code
 
 Use `collect --command-text` when the original quoting, wildcard expansion or

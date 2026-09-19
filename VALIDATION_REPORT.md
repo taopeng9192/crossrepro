@@ -1,5 +1,48 @@
 # CrossRepro validation report
 
+## Local Python-alias fix acceptance — 2026-09-19 / unreleased
+
+Status: **LOCAL_WINDOWS_VALIDATED / RELEASE_NOT_PUBLISHED**.
+
+This records the source fix based on `893c43c`, not the public v0.1.1 wheel.
+Windows Python alias candidates now receive a five-second isolated startup
+probe. Size/reparse metadata alone no longer causes rejection of working Python
+aliases or unrelated app aliases. The actual host App Installer Python alias
+fails startup and correctly produces `ENVIRONMENT_BLOCKED`. This requirement
+check does not establish general dependency or runtime-version compatibility.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Complete local suite, Windows / Python 3.12.14 | 118 passed, 1 skipped | `.validation/alias-probe-tests.xml` |
+| Source/test/script compilation | PASS | `python -m compileall -q src tests scripts` |
+| Examples, capture/replay/pack, workflow generation | PASS | `.validation/alias-probe-examples/validation.json` |
+| Wheel clean install, isolated import and capture/replay | PASS | `.validation/alias-probe-wheel.json` |
+| Installed-wheel acceptance in fresh receiver directory | PASS | `.validation/alias-probe-acceptance-utf8/summary.json` |
+| Wheel/source exact comparison | All 26 Python files match | `.validation/alias-probe-source-wheel.json` |
+
+The installed-wheel acceptance records `REPRODUCED` for a synthetic failing
+target, then `NOT_REPRODUCED` after changing that target to exit successfully.
+It also verifies `ENVIRONMENT_BLOCKED` for an absent requirement and the real
+host Python alias. The receiver obtains fixture source separately, as the bundle
+does not include a source checkout. All archive SHA-256 entries match and neither
+the synthetic API key nor email appears in any archive entry.
+
+The one skip is the symlink security test because this host refuses symlink
+creation. Working Store aliases are covered by mocked startup results; an actual
+working Store Python installation was not available for live validation. The
+normal installed interpreter path was exercised end to end. No system PATH
+configuration was changed. Example integration tests explicitly select their
+test interpreter; the host-alias acceptance preserves the original PATH.
+
+The acceptance harness uses explicit `-X utf8` with `-I`; earlier harness runs
+reported a decoding-thread exception because isolated Python ignores the
+`PYTHONUTF8` environment variable. Only the final `alias-probe-acceptance-utf8`
+run is the clean acceptance record. The CLI implementation was not changed for
+that harness issue.
+
+This local acceptance record does not claim new Linux/macOS or hosted CI results.
+Previous hosted results below apply to their recorded release commits only.
+
 ## Maintenance release validation — 2026-09-18 / 0.1.1
 
 Status: **PUBLIC_REPOSITORY / V0.1.1_RELEASED / HOSTED_MATRIX_VALIDATED**.

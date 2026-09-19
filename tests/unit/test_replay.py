@@ -38,7 +38,7 @@ def result(command, code=0, stderr=""):
 def test_missing_requirement_is_blocked(monkeypatch, tmp_path: Path):
     monkeypatch.setattr("crossrepro.replay.runner.command_exists", lambda name: False)
     execution = replay(spec(required_commands=["missing"]), base_dir=tmp_path)
-    assert "required command not found" in execution.blocked_reason
+    assert "required command is not runnable" in execution.blocked_reason
 
 
 def test_setup_failure_is_blocked_and_redacted(monkeypatch, tmp_path: Path):

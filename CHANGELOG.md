@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Check Windows Python app aliases with a bounded startup probe so an unavailable
+  Store placeholder produces `ENVIRONMENT_BLOCKED`. Preserve working Python
+  aliases and discovery of unrelated application aliases.
+- Make example integration tests explicitly use their test interpreter.
+
 ## 0.1.1 — 2026-09-18
 
 ### Timeout cleanup

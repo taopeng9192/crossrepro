@@ -61,7 +61,7 @@ def replay(spec: ReproSpec, *, base_dir: Path, timeout: int = 120) -> ReplayExec
 
     for required in spec.required_commands:
         if not command_exists(required):
-            return blocked(platform_key, workdir, f"required command not found: {required}")
+            return blocked(platform_key, workdir, f"required command is not runnable: {required}")
 
     command_spec = spec.command_for(platform_key)
     shell = resolve_shell(command_spec.shell)

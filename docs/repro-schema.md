@@ -61,7 +61,7 @@ platforms:
 | `workdir` | `.` | Relative to `--base-dir`; no drive, rooted path, traversal or alternate data stream. |
 | `command` | Required | `default: {run, shell?}` plus optional `windows`, `linux`, `macos` overrides. Flat `{run, shell?}` is also accepted. |
 | `setup.commands` | `[]` | Commands run in order before the target. |
-| `requirements.commands` | `[]` | Executables that must be discoverable on PATH before setup. |
+| `requirements.commands` | `[]` | Executables that must be discoverable on PATH before setup. Windows Python app aliases also require a successful bounded startup probe; this is not a general runtime/version/dependency health check. |
 | `bug_signature` | Required, nonempty | All exit, stream and file checks must pass. |
 | `platforms` | Three default runners when omitted/empty | Generated CI targets: Windows, Ubuntu and macOS latest runners. |
 | `capture` | Omitted | Optional `stdout`, `stderr`, `environment`, `git` flags; v1 supports only `true`. |
