@@ -31,6 +31,10 @@ Stage 10 now also has local Windows replay records for public uv and GitHub CLI
 issues in `docs/cases/case-002-uv-21477.md` and
 `docs/cases/case-003-gh-11402.md`; neither record constitutes upstream feedback
 or multi-platform validation.
+Five external-issue case records are now documented. Three have deterministic
+Windows replay verdicts, while the agent-browser timeout and npm dotted-bin
+missing-output observations remain intentionally outside the v1 automatic
+signature model. See `docs/cases/` for their exact scope and limitations.
 
 ## Release validation — 2026-09-18 / 0.1.0
 
