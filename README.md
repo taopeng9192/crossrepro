@@ -38,11 +38,11 @@ The legacy reproduction commands remain useful for examples such as:
 
 ## Repair a project
 
-Install the optional API provider after installing CrossRepro:
+The default provider uses a locally installed, ChatGPT-logged-in Codex CLI, so
+it does not require an API key. Confirm that login first:
 
 ```powershell
-python -m pip install -e ".[agent]"
-$env:OPENAI_API_KEY = "<your API key>"
+codex login status
 ```
 
 Then run a known failing test from any target repository. Start without
@@ -50,7 +50,7 @@ Then run a known failing test from any target repository. Start without
 source unchanged.
 
 ```powershell
-crossrepro fix --repo C:\source\target-project --test "python -m pytest tests/test_login.py" --model <model-id> --include src\login.py
+crossrepro fix --repo C:\source\target-project --test "python -m pytest tests/test_login.py" --provider codex --include src\login.py
 ```
 
 Review `.crossrepro/fix/candidate.patch`. To apply that exact candidate and
@@ -62,9 +62,18 @@ crossrepro fix --repo C:\source\target-project --test "python -m pytest tests/te
 
 `--include` is optional. When omitted, CrossRepro selects supported UTF-8 source
 files, skips common dependency/build directories and `.env` files, and limits
-the project context to 90 KB. With an API repair, the selected source and
-sanitized test output are sent to the configured provider. Do not use an
-external provider for source code you are not authorized to share.
+the project context to 90 KB. The selected source and sanitized test output are
+sent to the selected agent service. Do not use either provider for source code
+you are not authorized to share.
+
+To use the OpenAI API instead, install the optional dependency and select the
+provider explicitly:
+
+```powershell
+python -m pip install -e ".[agent]"
+$env:OPENAI_API_KEY = "<your API key>"
+crossrepro fix --repo C:\source\target-project --test "python -m pytest tests/test_login.py" --provider openai --model <model-id> --include src\login.py
+```
 
 | Repair status | Meaning |
 |---|---|
@@ -245,8 +254,9 @@ The examples demonstrate:
   still inspect a verified diff before committing it.
 - It is not a sandbox: replay executes the authored commands with your current
   user permissions. Inspect commands from an untrusted package before running them.
-- The optional OpenAI provider is an API integration, not a local model. It is
-  not used unless you invoke `fix` with a configured API key.
+- The default Codex provider requires an already authenticated local Codex CLI.
+  It runs in an ephemeral, read-only workspace and returns a patch only. The
+  optional OpenAI provider requires an API key.
 - It records a small allowlist of environment metadata, rather than dumping the
   full process environment. It redacts common keys, cookies, authorization
   headers, private keys, emails, and user-home paths; see the
@@ -256,11 +266,11 @@ The examples demonstrate:
 
 ## 中文快速上手
 
-1. 安装 Python 3.10+，从本仓库安装后执行 `python -m pip install -e ".[agent]"`，并设置 `OPENAI_API_KEY`。
+1. 安装 Python 3.10+，从本仓库安装后先执行 `codex login status` 确认本机 Codex 已通过 ChatGPT 登录。
 2. 先生成候选修复（不修改目标源码）：
 
    ```powershell
-   crossrepro fix --repo C:\目标项目 --test "python -m pytest tests/test_login.py" --model <model-id> --include src\login.py
+   crossrepro fix --repo C:\目标项目 --test "python -m pytest tests/test_login.py" --provider codex --include src\login.py
    ```
 
 3. 查看 `.crossrepro/fix/candidate.patch`；确认后用 `--patch-file <该补丁> --apply` 验证同一份补丁。只有原测试由失败变通过时，补丁才会保留，并显示 `FIXED`。

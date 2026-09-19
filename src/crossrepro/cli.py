@@ -18,7 +18,7 @@ from crossrepro.ci.github import generate_github_workflow
 from crossrepro.constants import DEFAULT_LATEST_DIR, SUPPORTED_SHELLS
 from crossrepro.redact.engine import redact_text, redact_data, redact_json
 from crossrepro.repair.models import FixStatus
-from crossrepro.repair.providers import FilePatchProvider, OpenAIRepairProvider
+from crossrepro.repair.providers import CodexCliRepairProvider, FilePatchProvider, OpenAIRepairProvider
 from crossrepro.repair.runner import fix as run_fix
 from crossrepro.replay.runner import replay as run_replay
 from crossrepro.schema.loader import ReproLoadError, load_repro
@@ -252,13 +252,14 @@ def ci(repro_file: Path, output: Path, install_source: str) -> None:
 @main.command()
 @click.option("--repo", type=click.Path(path_type=Path, exists=True, file_okay=False), default=Path("."), show_default=True, help="Target project to repair.")
 @click.option("--test", "test_command", required=True, help="Command that currently fails and should pass after the repair.")
-@click.option("--model", default=None, help="OpenAI model used to propose a patch. Required unless --patch-file is used.")
+@click.option("--provider", "provider_name", type=click.Choice(["codex", "openai"]), default="codex", show_default=True, help="Agent that proposes the patch.")
+@click.option("--model", default=None, help="Optional model override for the selected provider. Required for provider=openai.")
 @click.option("--patch-file", type=click.Path(path_type=Path, exists=True, dir_okay=False), default=None, help="Previously reviewed unified diff to validate and optionally apply without calling an API.")
 @click.option("--include", "includes", multiple=True, type=click.Path(path_type=str), help="Source file to send to the provider. Repeat to choose context explicitly.")
 @click.option("--apply", is_flag=True, help="Apply the candidate to the target project only while verification runs. Failed verification is reverted.")
 @click.option("--timeout", type=click.IntRange(min=1), default=120, show_default=True)
 @click.option("--out", type=click.Path(path_type=Path), default=Path(".crossrepro/fix"), show_default=True, help="Directory for candidate.patch and fix-report.json.")
-def fix(repo: Path, test_command: str, model: str | None, patch_file: Path | None, includes: tuple[str, ...], apply: bool, timeout: int, out: Path) -> None:
+def fix(repo: Path, test_command: str, provider_name: str, model: str | None, patch_file: Path | None, includes: tuple[str, ...], apply: bool, timeout: int, out: Path) -> None:
     """Propose and test a repair for a failing command.
 
     The OpenAI provider receives selected text source and the sanitized failed-test
@@ -269,10 +270,12 @@ def fix(repo: Path, test_command: str, model: str | None, patch_file: Path | Non
     output = out if out.is_absolute() else root / out
     if patch_file:
         provider = FilePatchProvider(patch_file)
+    elif provider_name == "codex":
+        provider = CodexCliRepairProvider(repo=root, timeout=timeout, model=model)
     elif model:
         provider = OpenAIRepairProvider(model=model)
     else:
-        raise click.ClickException("provide --model for an API repair, or --patch-file for a reviewed candidate")
+        raise click.ClickException("provider=openai requires --model; use provider=codex or --patch-file without an API key")
     result = run_fix(
         repo=root,
         test_command=test_command,

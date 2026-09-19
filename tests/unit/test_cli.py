@@ -136,3 +136,16 @@ def test_ci_command(monkeypatch, tmp_path: Path):
     result = CliRunner().invoke(main, ["ci", str(repro), "--output", str(output)])
     assert result.exit_code == 0
     assert "Workflow:" in result.output
+
+
+def test_fix_command_binds_provider_option(monkeypatch, tmp_path: Path):
+    from crossrepro.repair.models import FixResult, FixStatus
+
+    captured = {}
+    monkeypatch.setattr(
+        "crossrepro.cli.run_fix",
+        lambda **kwargs: captured.update(kwargs) or FixResult(FixStatus.FIXED, "fixed", 1, 0),
+    )
+    result = CliRunner().invoke(main, ["fix", "--repo", str(tmp_path), "--test", "x", "--provider", "codex"])
+    assert result.exit_code == 0, result.output
+    assert captured["provider"].__class__.__name__ == "CodexCliRepairProvider"

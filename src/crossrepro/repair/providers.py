@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
+import tempfile
 from typing import Protocol
 
 from .models import PatchProposal
@@ -11,6 +14,73 @@ from .models import PatchProposal
 class RepairProvider(Protocol):
     def propose(self, *, prompt: str) -> PatchProposal:
         """Return one proposed unified diff without applying it."""
+
+
+def _proposal_from_json(text: str, provider_name: str) -> PatchProposal:
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+        if text.endswith("```"):
+            text = text[:-3].rstrip()
+    try:
+        payload = json.loads(text)
+        summary = payload["summary"]
+        patch = payload["patch"]
+    except (KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"{provider_name} returned an invalid repair proposal") from exc
+    if not isinstance(summary, str) or not isinstance(patch, str):
+        raise ValueError(f"{provider_name} proposal fields must be strings")
+    return PatchProposal(summary=summary, patch=patch)
+
+
+class CodexCliRepairProvider:
+    """Use a locally authenticated Codex CLI in a read-only workspace."""
+
+    def __init__(self, *, repo: Path, timeout: int, model: str | None = None) -> None:
+        self.repo = repo
+        self.timeout = timeout
+        self.model = model
+
+    def propose(self, *, prompt: str) -> PatchProposal:
+        executable = shutil.which("codex")
+        if not executable:
+            raise ValueError("Codex CLI was not found on PATH")
+        output = tempfile.NamedTemporaryFile(prefix="crossrepro-codex-", suffix=".json", delete=False)
+        output.close()
+        args = [
+            executable,
+            "exec",
+            "--sandbox",
+            "read-only",
+            "--ignore-rules",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--cd",
+            str(self.repo),
+            "--output-last-message",
+            output.name,
+        ]
+        if self.model:
+            args.extend(["--model", self.model])
+        args.append("-")
+        try:
+            completed = subprocess.run(
+                args,
+                input=prompt,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                capture_output=True,
+                timeout=self.timeout,
+                check=False,
+            )
+            if completed.returncode != 0:
+                raise ValueError("Codex CLI did not complete the repair proposal")
+            return _proposal_from_json(Path(output.name).read_text(encoding="utf-8"), "Codex CLI")
+        except subprocess.TimeoutExpired as exc:
+            raise ValueError("Codex CLI timed out while proposing a repair") from exc
+        finally:
+            Path(output.name).unlink(missing_ok=True)
 
 
 class OpenAIRepairProvider:
@@ -46,14 +116,9 @@ class OpenAIRepairProvider:
             store=False,
         )
         try:
-            payload = json.loads(response.output_text)
-            summary = payload["summary"]
-            patch = payload["patch"]
-        except (AttributeError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            return _proposal_from_json(response.output_text, "OpenAI provider")
+        except AttributeError as exc:
             raise ValueError("OpenAI provider returned an invalid repair proposal") from exc
-        if not isinstance(summary, str) or not isinstance(patch, str):
-            raise ValueError("OpenAI provider proposal fields must be strings")
-        return PatchProposal(summary=summary, patch=patch)
 
 
 class FilePatchProvider:

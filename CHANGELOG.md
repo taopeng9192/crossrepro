@@ -8,6 +8,9 @@
   verification.
 - Add an optional OpenAI Responses API provider (`crossrepro[agent]`). It can
   return a patch but has no shell or filesystem tool access.
+- Add an API-key-free default provider for a locally authenticated Codex CLI.
+  CrossRepro invokes it in an ephemeral read-only sandbox and validates its
+  returned patch with the same repair flow.
 
 - Check Windows Python app aliases with a bounded startup probe so an unavailable
   Store placeholder produces `ENVIRONMENT_BLOCKED`. Preserve working Python

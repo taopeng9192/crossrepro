@@ -8,7 +8,7 @@ from types import ModuleType
 from crossrepro.capture.runner import default_shell
 from crossrepro.repair.models import FixStatus, PatchProposal
 from crossrepro.repair.patch import PatchError, stage_patch
-from crossrepro.repair.providers import FilePatchProvider, OpenAIRepairProvider
+from crossrepro.repair.providers import CodexCliRepairProvider, FilePatchProvider, OpenAIRepairProvider
 from crossrepro.repair.runner import fix
 
 
@@ -163,3 +163,24 @@ def test_file_patch_provider_reuses_the_reviewed_patch(tmp_path: Path):
 
     assert proposal.patch == answer_patch(2)
     assert "candidate.patch" in proposal.summary
+
+
+def test_codex_cli_provider_is_ephemeral_and_read_only(monkeypatch, tmp_path: Path):
+    calls: list[dict] = []
+
+    def fake_run(args, **kwargs):
+        calls.append({"args": args, **kwargs})
+        output = Path(args[args.index("--output-last-message") + 1])
+        output.write_text(json.dumps({"summary": "fix", "patch": answer_patch(2)}), encoding="utf-8")
+        return type("Completed", (), {"returncode": 0})()
+
+    monkeypatch.setattr("crossrepro.repair.providers.shutil.which", lambda _: "codex")
+    monkeypatch.setattr("crossrepro.repair.providers.subprocess.run", fake_run)
+
+    proposal = CodexCliRepairProvider(repo=tmp_path, timeout=30).propose(prompt="repair")
+
+    assert proposal.summary == "fix"
+    assert calls[0]["input"] == "repair"
+    assert calls[0]["args"][calls[0]["args"].index("--sandbox") + 1] == "read-only"
+    assert "--ephemeral" in calls[0]["args"]
+    assert "--ignore-rules" in calls[0]["args"]

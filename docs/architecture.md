@@ -21,6 +21,7 @@ Module boundaries are intentionally strict:
 - `cli`: orchestration only
 
 The core has no web server, database, Docker dependency, MCP server, or local
-model. The optional `agent` extra supplies the OpenAI Responses API adapter.
-The adapter receives source context and can return a patch only; it does not
-receive shell or filesystem tools.
+model. The default provider invokes an authenticated local Codex CLI in an
+ephemeral read-only sandbox. The optional `agent` extra supplies the OpenAI
+Responses API adapter. Both providers can return a patch only; they do not
+receive CrossRepro shell or filesystem tools.
