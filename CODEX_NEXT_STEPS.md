@@ -12,11 +12,13 @@ skips. The public wheel was fetched from that Release into a fresh venv,
 imported as `0.1.1`, and its `crossrepro --help` entry point succeeded; SHA-256
 is `c28599635aca851fbf7aeaf967b3c3a9618c0e20e97e296b4868c43497efac21`.
 
-Stage 10 has one documented isolated local case:
-`docs/cases/case-001-agent-browser-1407.md`. It found a collection-timeout
-cleanup defect in CrossRepro and resulted in v0.1.1, but it is not an upstream
-confirmation, upstream feedback, or external adoption. The related project
-issue `#1` is closed after release validation.
+Stage 10 has three documented isolated local cases in different external
+repositories: `docs/cases/case-001-agent-browser-1407.md`,
+`docs/cases/case-002-uv-21477.md`, and `docs/cases/case-003-gh-11402.md`.
+Case 001 found a collection-timeout cleanup defect in CrossRepro and resulted
+in v0.1.1; cases 002 and 003 replayed Windows path-with-space failures. None is
+upstream confirmation, upstream feedback, or external adoption. The related
+project issue `#1` is closed after release validation.
 
 Local review, fixes, full Windows tests (111 passed, 1 symlink test skipped),
 three real examples, bundle checks and clean wheel installation are done. The

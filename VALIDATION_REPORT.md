@@ -27,6 +27,10 @@ Issue `#1` records the detached-child trigger and was closed after the public
 wheel validation. Case 001 is an isolated local evaluation of a public
 agent-browser issue; it is not an upstream-confirmed reproduction, contributor
 feedback, or a three-platform result. See `docs/cases/case-001-agent-browser-1407.md`.
+Stage 10 now also has local Windows replay records for public uv and GitHub CLI
+issues in `docs/cases/case-002-uv-21477.md` and
+`docs/cases/case-003-gh-11402.md`; neither record constitutes upstream feedback
+or multi-platform validation.
 
 ## Release validation — 2026-09-18 / 0.1.0
 
