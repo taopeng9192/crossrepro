@@ -29,6 +29,54 @@ failing command
   → FIXED only if the command now passes; otherwise revert the patch
 ```
 
+## What it can repair — and when to use it
+
+CrossRepro is for a **locally reproducible code defect**: a command currently
+fails, the expected outcome is that it passes, and a small change to existing
+text source may solve it. Typical examples include:
+
+| Problem you can reproduce | Examples of a repair it can propose |
+|---|---|
+| A unit or integration test fails | An incorrect condition, missing branch, wrong return value, or off-by-one error |
+| Input handling rejects valid data or accepts invalid data | A parsing, validation, escaping, or serialization correction |
+| Code raises an exception on a known path | A wrong import, function call, type conversion, null check, or error-handling path |
+| A command behaves differently on one supported platform | A platform-specific path, quoting, or configuration-read fix, if the command reproduces locally |
+| A regression has a focused test | A minimal change in the source file covered by that test |
+
+Use it when all of these are true:
+
+1. You can supply one command that fails now and should pass after the repair.
+2. The target repository and its test dependencies are already runnable on your machine.
+3. You can identify the relevant source files, preferably with `--include`.
+4. You are authorized to send the selected source and sanitized failure output to the chosen provider.
+5. You will review the resulting diff before committing it. `FIXED` proves the supplied command passed; it does not prove every behavior in the application is correct.
+
+It is not the right tool for an outage caused only by a remote service, missing
+credentials, an unavailable database, an unknown expected behavior, a flaky
+test, or a change that needs new files, dependency upgrades, migrations, or a
+large redesign. In those cases, first make the failure deterministic and decide
+the expected behavior; then use CrossRepro for a focused source-level repair.
+
+> **中文说明：** 它适合“本机能稳定复现、知道应当通过、通常可用少量现有源码修改解决”的问题，例如测试断言失败、边界条件错误、参数校验、解析/序列化、空值或类型处理、错误的调用与跨平台路径问题。它不适合直接修复线上服务故障、缺少密钥或数据库、没有明确预期、测试不稳定、需要大规模重构或新增依赖的情况。
+
+## How it differs from a general coding agent
+
+CrossRepro does not claim that its repair model is better than every coding
+agent. Its value is the **verification boundary around the model**:
+
+| General chat or autonomous coding agent | CrossRepro |
+|---|---|
+| May edit files directly and report a plausible answer | Receives a bounded source context and can return only one unified diff |
+| May decide which commands to run | CrossRepro runs only the failing command that you supplied |
+| A suggested patch may never be tested | It records the baseline failure, reruns the same command, and emits `FIXED` only after that command passes |
+| A failed attempt can leave changes behind | Failed verification restores the original target files |
+| Often needs a separate API setup | The default provider uses an already ChatGPT-authenticated local Codex CLI; the OpenAI API is optional |
+
+It also keeps the earlier reproduction workflow: when the failure is not yet
+clear enough to repair, you can capture, redact, replay, bundle, and run the
+same reproduction in CI. That gives a maintainer evidence to investigate
+instead of only a copied error message.
+
 The legacy reproduction commands remain useful for examples such as:
 
 - `npm test` fails on Windows but succeeds in CI;
